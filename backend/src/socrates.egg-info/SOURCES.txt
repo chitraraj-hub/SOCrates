@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/socrates/__init__.py
+src/socrates/main.py
+src/socrates.egg-info/PKG-INFO
+src/socrates.egg-info/SOURCES.txt
+src/socrates.egg-info/dependency_links.txt
+src/socrates.egg-info/requires.txt
+src/socrates.egg-info/top_level.txt

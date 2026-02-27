@@ -1,19 +1,21 @@
+# Data
+data/synthetic_logs.csv
+data/ground_truth.csv
+data/uploads/
+
 # Python
-.venv/
-__pycache__/
+backend/.venv/
+backend/src/socrates/ml/models/
+**/__pycache__/
 *.pyc
-
-# Node
-node_modules/
-.next/
-
-# Env
+*.pyo
 .env
 
-# OS
-.DS_Store
-*.pkl
-data_generator/output/
-.DS_Store
-*.egg-info/
-.pytest_cache/
+# Frontend
+frontend/node_modules/
+frontend/.next/
+
+# Jupyter
+data/.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+*.ipynb_checkpoints
