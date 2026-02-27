@@ -1,0 +1,17 @@
+output:
+  log_file: "data/synthetic_logs.csv"
+  ground_truth_file: "data/ground_truth.csv"
+
+company:
+  num_users: 10
+  num_days: 14
+  business_hours_start: 9
+  business_hours_end: 18
+  timezone: "US/Eastern"
+
+anomalies:
+  enabled: true
+  scenarios:
+    beaconing: true
+
+seed: 42

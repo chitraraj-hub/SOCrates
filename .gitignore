@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+.next/
+
+# Env
+.env
+
+# OS
+.DS_Store
+*.pkl
+data_generator/output/
+.DS_Store
+*.egg-info/
+.pytest_cache/
