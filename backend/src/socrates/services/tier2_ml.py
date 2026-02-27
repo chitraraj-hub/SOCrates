@@ -97,10 +97,14 @@ def get_top_features(
 # Main inference function
 # ---------------------------------------------------------------------------
 
-def run_tier2(logs: List[LogEntry]) -> List[Tier2Result]:
+def run_tier2(
+    logs:      List[LogEntry],
+    skip_keys: set = None,    # (src_ip, domain) pairs already handled by Tier 1 at critical confidence
+) -> List[Tier2Result]:
     """
     Extract features, score with Isolation Forest,
     return results above confidence threshold sorted by confidence.
+    Skips pairs already flagged as critical by Tier 1 — no need to re-score.
     """
 
     # Load model and scaler
@@ -120,13 +124,26 @@ def run_tier2(logs: List[LogEntry]) -> List[Tier2Result]:
         print("[tier2] No feature vectors extracted")
         return []
 
+    # Filter out keys already handled by Tier 1 at critical confidence
+    if skip_keys:
+        before = len(vectors)
+        vectors = [
+            v for v in vectors
+            if (v.src_ip, v.domain) not in skip_keys
+        ]
+        print(f"[tier2] Skipped {before - len(vectors)} pairs already flagged critical by Tier 1")
+
+    if not vectors:
+        print("[tier2] No vectors remaining after skip filter")
+        return []
+
     # Build and scale feature matrix
     X        = to_matrix(vectors)
     X_scaled = scaler.transform(X)
 
-    # Score — more negative = more anomalous
-    raw_scores   = model.score_samples(X_scaled)
-    confidences  = normalize_scores(raw_scores)
+    # Score
+    raw_scores  = model.score_samples(X_scaled)
+    confidences = normalize_scores(raw_scores)
 
     print(f"[tier2] Scored {len(vectors):,} feature vectors")
     print(f"[tier2] Score range: [{raw_scores.min():.3f}, {raw_scores.max():.3f}]")
@@ -142,7 +159,6 @@ def run_tier2(logs: List[LogEntry]) -> List[Tier2Result]:
 
         top_feats = get_top_features(vector, scaler)
 
-        # Build human readable description
         feature_explanations = {
             "cv":                 f"request interval CV={vector.cv:.3f} (machines are unnaturally regular)",
             "avg_interval_s":     f"avg interval {vector.avg_interval_s:.1f}s (consistent periodic pattern)",
@@ -175,6 +191,5 @@ def run_tier2(logs: List[LogEntry]) -> List[Tier2Result]:
         ))
 
     results.sort(key=lambda r: r.confidence, reverse=True)
-
     print(f"[tier2] Flagged {len(results)} vectors above threshold {CONFIDENCE_THRESHOLD}")
     return results

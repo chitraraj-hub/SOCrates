@@ -168,7 +168,16 @@ def main():
     print("\n[eval] Parsing logs and running pipeline...")
     logs          = parse_log_file(str(LOG_FILE))
     tier1_results = run_tier1(logs)
-    tier2_results = run_tier2(logs)
+
+    # Match pipeline behavior — skip critical Tier 1 pairs in Tier 2
+    tier1_critical_keys = {
+        (r.src_ip, r.domain)
+        for r in tier1_results
+        if len(r.methods_fired) == 3
+    }
+    print(f"[eval] Tier 1 critical pairs skipped in Tier 2: {len(tier1_critical_keys)}")
+
+    tier2_results = run_tier2(logs, skip_keys=tier1_critical_keys)
 
     tier1_ips    = set(r.src_ip for r in tier1_results)
     tier2_ips    = set(r.src_ip for r in tier2_results)

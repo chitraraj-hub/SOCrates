@@ -181,3 +181,15 @@ python -m socrates.evaluation.evaluate_tier1
 cd backend
 python -m socrates.evaluation.evaluate_tier2
 ```
+
+### Running Tiers
+
+# Tier 1
+./scripts/run_tier1.sh
+
+# Tier 2
+./scripts/run_tier2.sh
+
+# Full pipeline
+./scripts/run_pipeline.sh
+

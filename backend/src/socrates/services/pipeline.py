@@ -1,12 +1,4 @@
 # backend/src/socrates/services/pipeline.py
-#
-# Orchestrates the full three-tier detection pipeline.
-# Input:  path to uploaded log CSV
-# Output: list of Tier3Results ranked by confidence
-#
-# NOTE: Prototype — runs tiers sequentially in-process.
-# Production would: run async, persist results to PostgreSQL,
-# track job status, handle timeouts per tier.
 
 from dataclasses import dataclass
 from typing import List
@@ -33,15 +25,19 @@ class PipelineResult:
 def run_pipeline(filepath: str) -> PipelineResult:
     """
     Run the full SOCrates detection pipeline on a log file.
-    Returns a PipelineResult with all anomalies explained.
+
+    Flow:
+      Tier 1 → flags obvious anomalies with rule-based methods
+      Tier 2 → scores only what Tier 1 didn't flag as critical
+      Tier 3 → explains everything flagged by either tier
     """
     start = time.monotonic()
     print(f"\n[pipeline] Starting SOCrates pipeline on {Path(filepath).name}")
     print("[pipeline] " + "=" * 45)
 
     # --- Parse ---
-    t0   = time.monotonic()
-    logs = parse_log_file(filepath)
+    t0            = time.monotonic()
+    logs          = parse_log_file(filepath)
     parse_time_ms = (time.monotonic() - t0) * 1000
     print(f"[pipeline] Step 1 — Parsed {len(logs):,} log entries in {parse_time_ms:.0f}ms")
 
@@ -51,9 +47,19 @@ def run_pipeline(filepath: str) -> PipelineResult:
     tier1_time_ms = (time.monotonic() - t0) * 1000
     print(f"[pipeline] Step 2 — Tier 1 flagged {len(tier1_results)} anomalies in {tier1_time_ms:.0f}ms")
 
+    # Critical pairs — all 3 methods fired, Tier 1 is certain
+    # Tier 2 skips these — no value in re-scoring what we're already sure about
+    tier1_critical_keys = {
+        (r.src_ip, r.domain)
+        for r in tier1_results
+        if len(r.methods_fired) == 3
+    }
+    if tier1_critical_keys:
+        print(f"[pipeline] Step 2 — {len(tier1_critical_keys)} critical pairs skipped in Tier 2")
+
     # --- Tier 2 ---
     t0            = time.monotonic()
-    tier2_results = run_tier2(logs)
+    tier2_results = run_tier2(logs, skip_keys=tier1_critical_keys)
     tier2_time_ms = (time.monotonic() - t0) * 1000
     print(f"[pipeline] Step 3 — Tier 2 flagged {len(tier2_results)} anomalies in {tier2_time_ms:.0f}ms")
 
